@@ -1,0 +1,59 @@
+name: Matrix Build with Artifacts
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    # run matrix on ubuntu for different Node.js versions
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [14, 16, 18]     # 3 variants (can be extended)
+        include:
+          - variant: node14
+            node-version: 14
+          - variant: node16
+            node-version: 16
+          - variant: node18
+            node-version: 18
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: matrix-4ad9098
+        id: matrix_step
+        run: |
+          echo "Running matrix job for variant: ${{ matrix.variant }} (node ${{ matrix.node-version }})"
+          echo "JOB_VARIANT=${{ matrix.variant }}" >> $GITHUB_ENV
+
+      - name: Build (simulate) - create artifact content
+        run: |
+          # produce a small but non-empty file as build artifact
+          echo "Build output for variant: ${{ matrix.variant }} (node ${{ matrix.node-version }})" > build-info.txt
+          echo "timestamp: $(date --utc +\"%Y-%m-%dT%H:%M:%SZ\")" >> build-info.txt
+          echo "git-sha: $GITHUB_SHA" >> build-info.txt
+          echo "matrix-identifier-step: matrix-4ad9098" >> build-info.txt
+
+      - name: Show artifact content (for logs)
+        run: |
+          echo "---- artifact content ----"
+          cat build-info.txt
+          echo "--------------------------"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-4ad9098-${{ matrix.variant }}
+          path: build-info.txt
